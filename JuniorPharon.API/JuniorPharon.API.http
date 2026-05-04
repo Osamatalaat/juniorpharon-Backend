@@ -1,0 +1,6 @@
+@JuniorPharon.API_HostAddress = http://localhost:5220
+
+GET {{JuniorPharon.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

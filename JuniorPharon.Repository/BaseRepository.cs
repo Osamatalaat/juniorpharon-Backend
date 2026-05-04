@@ -1,0 +1,215 @@
+﻿using Infrastructure.SqlServer;
+using JuniorPharon.ViewModels;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+
+namespace JuniorPharon.Repository
+{
+    public class BaseRepository<T> where T : class
+    {
+        protected readonly DBContext _context;
+        protected readonly DbSet<T> Table;
+
+        public BaseRepository(DBContext context)
+        {
+            _context = context;
+            Table = _context.Set<T>();
+        }
+
+        public async Task AddAsync(T entity)
+        {
+            try
+            {
+                await Table.AddAsync(entity);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            try
+            {
+                await Table.AddRangeAsync(entities);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        public async Task UpdateAsync(T entity)
+        {
+            try
+            {
+                Table.Update(entity);
+                await Task.CompletedTask; // Simulate async operation
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public async Task UpdateRangeAsync(IEnumerable<T> entities)
+        {
+            try
+            {
+                Table.UpdateRange(entities);
+                await Task.CompletedTask;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+
+        public async Task Delete(T entity)
+        {
+            try
+            {
+                Table.Remove(entity);
+
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public async Task DeleteRange(IEnumerable<T> entities)
+        {
+            try
+            {
+                Table.RemoveRange(entities);
+                await Task.CompletedTask;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+
+        public async Task<T?> GetByIdAsync(int id)
+        {
+            try
+            {
+                return await Table.FindAsync(id);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public async Task<T?> GetByIdAsync(string id)
+        {
+            try
+            {
+                return await Table.FindAsync(id);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+        // Get list with optional filtering and no pagination
+        public IQueryable<T> GetList(Expression<Func<T, bool>> filter = null)
+        {
+            try
+            {
+
+
+                return  filter != null ? Table.Where(filter) : Table;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        // Get all entities without pagination & filtering
+        public async Task<List<T>> GetAllAsync()
+        {
+            try
+            {
+                return await Table.ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+        public async Task<PaginationVM<TViewModel>> SearchAsync<TViewModel, TKey>(
+         Expression<Func<T, bool>>? filterPredicate,
+         Expression<Func<T, TKey>>? orderBy,
+         Expression<Func<T, TViewModel>>? selector,
+         bool descending = false,
+         int pageSize = 10,
+         int pageIndex = 1)
+        {
+            try
+            {
+                var query = GetSortedFilter(orderBy, filterPredicate, !descending);
+
+                var totalCount = await query.CountAsync();
+
+                var data = await query
+                    .Skip((pageIndex - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(selector)
+                    .ToListAsync();
+
+                return new PaginationVM<TViewModel>
+                {
+                    Data = data,
+                    TotalCount = totalCount,
+                    PageNumber = pageIndex,
+                    PageSize = pageSize
+                };
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+        protected IQueryable<T> GetSortedFilter<TKey>(
+           Expression<Func<T, TKey>>? orderBy,
+           Expression<Func<T, bool>>? filter,
+           bool ascending = true)
+        {
+            try
+            {
+                var query = Table.AsQueryable();
+
+                if (filter != null)
+                    query = query.Where(filter);
+
+                if (orderBy != null)
+                    query = ascending ? query.OrderBy(orderBy) : query.OrderByDescending(orderBy);
+
+                return query;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+
+
+
+
+    }
+}
